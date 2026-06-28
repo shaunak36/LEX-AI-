@@ -318,6 +318,9 @@ function ClauseCard({ clause }: { clause: Clause }) {
 
 export const NegotiationAssistant: React.FC = () => {
   const [filter, setFilter] = useState<'all' | Negotiability>('all');
+  
+  const [isReanalysing, setIsReanalysing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const filtered =
     filter === 'all' ? MOCK_CLAUSES : MOCK_CLAUSES.filter((c) => c.negotiability === filter);
@@ -326,6 +329,52 @@ export const NegotiationAssistant: React.FC = () => {
     negotiable: MOCK_CLAUSES.filter((c) => c.negotiability === 'negotiable').length,
     'non-negotiable': MOCK_CLAUSES.filter((c) => c.negotiability === 'non-negotiable').length,
     conditional: MOCK_CLAUSES.filter((c) => c.negotiability === 'conditional').length,
+  };
+
+  // Action Handlers
+  const handleReanalyse = async () => {
+    setIsReanalysing(true);
+    try {
+      console.log('Initiating re-analysis...');
+      // Simulate API call with a 1.5 second timeout
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      alert('Contract re-analysed successfully!');
+    } catch (error) {
+      console.error('Failed to re-analyse:', error);
+    } finally {
+      setIsReanalysing(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // 1. Prepare the data (converting MOCK_CLAUSES to a formatted JSON string)
+      const exportData = JSON.stringify(MOCK_CLAUSES, null, 2);
+      
+      // 2. Create a Blob (a file-like object) from the data
+      const blob = new Blob([exportData], { type: 'application/json' });
+      
+      // 3. Create a temporary URL for the Blob
+      const url = URL.createObjectURL(blob);
+      
+      // 4. Create an invisible anchor tag to trigger the download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Negotiation_Report_CloudTech.json'; // Name of the downloaded file
+      
+      // 5. Append to the document, click it, and clean up
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Failed to export:', error);
+      alert('An error occurred while generating the export file.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -348,14 +397,37 @@ export const NegotiationAssistant: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 self-start md:self-center">
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold text-xs tracking-wider transition-colors">
-              <RotateCcw size={14} />
-              Re-analyse
+            
+            <button 
+              onClick={handleReanalyse}
+              disabled={isReanalysing}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold text-xs tracking-wider transition-colors ${
+                isReanalysing ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isReanalysing ? (
+                <RotateCcw size={14} className="animate-spin" />
+              ) : (
+                <RotateCcw size={14} />
+              )}
+              {isReanalysing ? 'Analysing...' : 'Re-analyse'}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs tracking-wider transition-colors shadow-lg shadow-indigo-500/10">
-              <FileText size={14} />
-              Export Report
+            
+            <button 
+              onClick={handleExport}
+              disabled={isExporting}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs tracking-wider transition-colors shadow-lg shadow-indigo-500/10 ${
+                isExporting ? 'opacity-75 cursor-not-allowed' : ''
+              }`}
+            >
+              {isExporting ? (
+                <Clock size={14} className="animate-spin" />
+              ) : (
+                <FileText size={14} />
+              )}
+              {isExporting ? 'Exporting...' : 'Export Report'}
             </button>
+
           </div>
         </div>
       </div>
