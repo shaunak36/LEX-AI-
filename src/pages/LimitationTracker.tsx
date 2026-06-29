@@ -182,9 +182,17 @@ function PeriodCard({ period, onToggleAlert }: { period: LimitationPeriod; onTog
       'border-slate-200 dark:border-zinc-800'
     }`}>
       {/* Header */}
-      <button
-        className="w-full text-left p-5 hover:bg-slate-50/60 dark:hover:bg-zinc-950/30 transition-colors flex items-start gap-4"
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full text-left p-5 hover:bg-slate-50/60 dark:hover:bg-zinc-950/30 transition-colors flex items-start gap-4 cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50"
         onClick={() => setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(!expanded);
+          }
+        }}
       >
         <div className={`p-2.5 rounded-xl flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
           <Icon size={17} />
@@ -218,14 +226,14 @@ function PeriodCard({ period, onToggleAlert }: { period: LimitationPeriod; onTog
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); onToggleAlert(period.id); }}
-            className={`p-2 rounded-xl transition-colors ${period.alertEnabled ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
+            className="p-2 rounded-xl transition-colors bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer"
             title={period.alertEnabled ? 'Disable alert' : 'Enable alert'}
           >
-            {period.alertEnabled ? <Bell size={14} /> : <BellOff size={14} />}
+            {period.alertEnabled ? <Bell size={14} className="text-blue-500" /> : <BellOff size={14} />}
           </button>
           {expanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
         </div>
-      </button>
+      </div>
 
       {/* Expanded detail */}
       {expanded && (
@@ -275,9 +283,18 @@ function PeriodCard({ period, onToggleAlert }: { period: LimitationPeriod; onTog
 export const LimitationTracker: React.FC = () => {
   const [filter, setFilter] = useState<'all' | Urgency>('all');
   const [periods, setPeriods] = useState(PERIODS);
+  const [rescanning, setRescanning] = useState(false);
 
   const handleToggleAlert = (id: string) => {
     setPeriods((prev) => prev.map((p) => p.id === id ? { ...p, alertEnabled: !p.alertEnabled } : p));
+  };
+
+  const handleRescan = async () => {
+    setRescanning(true);
+    // Simulate re-scan delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setRescanning(false);
+    alert('Limitation act parsing scan completed! Expiry periods updated.');
   };
 
   const counts = {
@@ -310,8 +327,13 @@ export const LimitationTracker: React.FC = () => {
               Auto-detected limitation periods from your contracts. Track expiry dates, view Limitation Act references, and never miss a deadline.
             </p>
           </div>
-          <button className="flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs tracking-wider transition-colors shadow-lg shadow-amber-500/10 self-start md:self-center">
-            <Sparkles size={14} /> Re-scan Documents
+          <button 
+            onClick={handleRescan}
+            disabled={rescanning}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs tracking-wider transition-colors shadow-lg shadow-amber-500/10 self-start md:self-center disabled:opacity-50 cursor-pointer"
+          >
+            <Sparkles size={14} className={rescanning ? 'animate-spin' : ''} />
+            {rescanning ? 'Rescanning...' : 'Re-scan Documents'}
           </button>
         </div>
       </div>
@@ -332,14 +354,23 @@ export const LimitationTracker: React.FC = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Expired', value: counts.expired, icon: Clock, color: 'text-slate-500 dark:text-zinc-400', bg: 'bg-slate-100 dark:bg-zinc-800' },
-          { label: 'Critical (≤7 days)', value: counts.critical, icon: Flame, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20' },
-          { label: 'Warning (≤90 days)', value: counts.warning, icon: AlertTriangle, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20' },
-          { label: 'Safe', value: counts.safe, icon: Shield, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
+          { label: 'Expired', value: counts.expired, icon: Clock, color: 'text-slate-500 dark:text-zinc-400', bg: 'bg-slate-100 dark:bg-zinc-800', filterKey: 'expired' as const },
+          { label: 'Critical (≤7 days)', value: counts.critical, icon: Flame, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', filterKey: 'critical' as const },
+          { label: 'Warning (≤90 days)', value: counts.warning, icon: AlertTriangle, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', filterKey: 'warning' as const },
+          { label: 'Safe', value: counts.safe, icon: Shield, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20', filterKey: 'safe' as const },
         ].map((s, i) => {
           const Icon = s.icon;
+          const isActive = filter === s.filterKey;
           return (
-            <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between">
+            <div 
+              key={i} 
+              onClick={() => setFilter(isActive ? 'all' : s.filterKey)}
+              className={`bg-white dark:bg-zinc-900 border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition-all duration-200 hover:border-amber-500/50 ${
+                isActive 
+                  ? 'border-amber-500 ring-2 ring-amber-500/10 shadow-md bg-amber-50/5 dark:bg-amber-950/5' 
+                  : 'border-slate-200 dark:border-zinc-800'
+              }`}
+            >
               <div className="flex items-center justify-between w-full">
                 <span className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">{s.label}</span>
                 <div className={`p-2 rounded-xl ${s.bg} ${s.color}`}><Icon size={15} /></div>

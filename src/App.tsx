@@ -16,6 +16,7 @@ import { DefinedTerms } from './pages/DefinedTerms';
 import { ObligationTracker } from './pages/ObligationTracker';
 import { MemoGenerator } from './pages/MemoGenerator';
 import { Comparison } from './pages/Comparison';
+import { LexCaseResearch } from './pages/LexCaseResearch';
 import { Settings } from './pages/Settings';
 import { NegotiationAssistant } from './pages/NegotiationAssistant';
 import { TemplatesLibrary } from './pages/TemplatesLibrary';
@@ -63,6 +64,8 @@ case 'limitation-tracker':
         return <MemoGenerator />;
       case 'comparison':
         return <Comparison />;
+      case 'lexcase-research':
+        return <LexCaseResearch />;  
       case 'settings':
         return <Settings />;
       default:

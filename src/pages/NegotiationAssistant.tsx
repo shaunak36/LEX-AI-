@@ -318,9 +318,13 @@ function ClauseCard({ clause }: { clause: Clause }) {
 
 export const NegotiationAssistant: React.FC = () => {
   const [filter, setFilter] = useState<'all' | Negotiability>('all');
+<<<<<<< HEAD
   
   const [isReanalysing, setIsReanalysing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+=======
+  const [reanalysing, setReanalysing] = useState(false);
+>>>>>>> 047233bf435ef3fbf7fd0ee43e442331a568289a
 
   const filtered =
     filter === 'all' ? MOCK_CLAUSES : MOCK_CLAUSES.filter((c) => c.negotiability === filter);
@@ -331,6 +335,7 @@ export const NegotiationAssistant: React.FC = () => {
     conditional: MOCK_CLAUSES.filter((c) => c.negotiability === 'conditional').length,
   };
 
+<<<<<<< HEAD
   // Action Handlers
   const handleReanalyse = async () => {
     setIsReanalysing(true);
@@ -375,6 +380,42 @@ export const NegotiationAssistant: React.FC = () => {
     } finally {
       setIsExporting(false);
     }
+=======
+  const handleReanalyse = async () => {
+    setReanalysing(true);
+    // Simulate re-analysis
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setReanalysing(false);
+    alert('Negotiation intelligence re-analysis complete! All counter-proposals refreshed.');
+  };
+
+  const handleExportReport = () => {
+    const reportText = `NEGOTIATION INTELLIGENCE REPORT
+Generated on: ${new Date().toLocaleString()}
+--------------------------------------------
+${MOCK_CLAUSES.map(c => `
+Clause: ${c.title}
+Severity: ${c.severity.toUpperCase()}
+Negotiability: ${c.negotiability.toUpperCase()}
+
+Original text:
+"${c.original}"
+
+Recommendation / Reason:
+${c.reason}
+
+Suggested Counter-Proposal:
+${c.counterProposal || 'N/A'}
+--------------------------------------------`).join('\n')}`;
+
+    const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Negotiation_Report_${new Date().toISOString().split('T')[0]}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+>>>>>>> 047233bf435ef3fbf7fd0ee43e442331a568289a
   };
 
   return (
@@ -397,6 +438,7 @@ export const NegotiationAssistant: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 self-start md:self-center">
+<<<<<<< HEAD
             
             <button 
               onClick={handleReanalyse}
@@ -426,6 +468,22 @@ export const NegotiationAssistant: React.FC = () => {
                 <FileText size={14} />
               )}
               {isExporting ? 'Exporting...' : 'Export Report'}
+=======
+            <button 
+              onClick={handleReanalyse}
+              disabled={reanalysing}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold text-xs tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <RotateCcw size={14} className={reanalysing ? 'animate-spin' : ''} />
+              {reanalysing ? 'Re-analysing...' : 'Re-analyse'}
+            </button>
+            <button 
+              onClick={handleExportReport}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs tracking-wider transition-colors shadow-lg shadow-indigo-500/10 cursor-pointer"
+            >
+              <FileText size={14} />
+              Export Report
+>>>>>>> 047233bf435ef3fbf7fd0ee43e442331a568289a
             </button>
 
           </div>
@@ -435,14 +493,23 @@ export const NegotiationAssistant: React.FC = () => {
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Clauses', value: MOCK_CLAUSES.length, icon: Scale, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/20' },
-          { label: 'Negotiable', value: counts.negotiable, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
-          { label: 'Non-Negotiable', value: counts['non-negotiable'], icon: Shield, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20' },
-          { label: 'Conditional', value: counts.conditional, icon: TrendingDown, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20' },
+          { label: 'Total Clauses', value: MOCK_CLAUSES.length, icon: Scale, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/20', filterKey: 'all' as const },
+          { label: 'Negotiable', value: counts.negotiable, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20', filterKey: 'negotiable' as const },
+          { label: 'Non-Negotiable', value: counts['non-negotiable'], icon: Shield, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', filterKey: 'non-negotiable' as const },
+          { label: 'Conditional', value: counts.conditional, icon: TrendingDown, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', filterKey: 'conditional' as const },
         ].map((stat, idx) => {
           const Icon = stat.icon;
+          const isActive = filter === stat.filterKey;
           return (
-            <div key={idx} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between">
+            <div 
+              key={idx} 
+              onClick={() => setFilter(stat.filterKey)}
+              className={`bg-white dark:bg-zinc-900 border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition-all duration-200 hover:border-indigo-500/50 ${
+                isActive 
+                  ? 'border-indigo-500 ring-2 ring-indigo-500/10 shadow-md bg-indigo-50/5 dark:bg-indigo-950/5' 
+                  : 'border-slate-200 dark:border-zinc-800'
+              }`}
+            >
               <div className="flex items-center justify-between w-full">
                 <span className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">{stat.label}</span>
                 <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
