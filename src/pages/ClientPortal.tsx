@@ -20,6 +20,8 @@ import {
   Building2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import AddClientModal from '../components/AddClientModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Client {
@@ -163,12 +165,16 @@ const ClientPortal: React.FC = () => {
   const { theme } = useApp();
   const isDark = theme === 'dark';
 
+  const [clients, setClients] = useState<Client[]>(CLIENTS);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+
   const [selectedClient, setSelectedClient] = useState<Client | null>(CLIENTS[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Inactive' | 'Pending'>('All');
   const [activeTab, setActiveTab] = useState<'overview' | 'matters' | 'documents' | 'messages'>('overview');
 
-  const filtered = CLIENTS.filter((c) => {
+  const filtered = clients.filter((c) => {
     const matchSearch =
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.company.toLowerCase().includes(searchQuery.toLowerCase());
@@ -187,6 +193,17 @@ const ClientPortal: React.FC = () => {
   const hoverRow = isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50';
   const selectedRow = isDark ? 'bg-indigo-500/10 border-l-2 border-indigo-400' : 'bg-indigo-50 border-l-2 border-indigo-500';
 
+  const handleAddClient = (newClient: Client) => {
+    setClients([newClient, ...clients]);
+    setSelectedClient(newClient);
+    setIsAddModalOpen(false);
+    setSearchQuery('');
+    setFilterStatus('All');
+    
+    setToast({ show: true, message: 'Client added successfully!' });
+    setTimeout(() => setToast({ show: false, message: '' }), 3000);
+  };
+
   return (
     <div className={`flex h-full ${bg} overflow-hidden`}>
       {/* ── Left Panel: Client List ─────────────────────────────────── */}
@@ -195,7 +212,10 @@ const ClientPortal: React.FC = () => {
         <div className={`px-4 pt-5 pb-3 border-b ${border}`}>
           <div className="flex items-center justify-between mb-3">
             <h2 className={`text-lg font-semibold ${textPrimary}`}>Client Portal</h2>
-            <button className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+            <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+            >
               <Plus size={13} />
               Add Client
             </button>
@@ -271,9 +291,9 @@ const ClientPortal: React.FC = () => {
         {/* Stats footer */}
         <div className={`px-4 py-3 border-t ${border} grid grid-cols-3 gap-2`}>
           {[
-            { label: 'Total', val: CLIENTS.length, icon: Users },
-            { label: 'Active', val: CLIENTS.filter((c) => c.status === 'Active').length, icon: CheckCircle },
-            { label: 'Pending', val: CLIENTS.filter((c) => c.status === 'Pending').length, icon: AlertCircle },
+            { label: 'Total', val: clients.length, icon: Users },
+            { label: 'Active', val: clients.filter((c) => c.status === 'Active').length, icon: CheckCircle },
+            { label: 'Pending', val: clients.filter((c) => c.status === 'Pending').length, icon: AlertCircle },
           ].map(({ label, val, icon: Icon }) => (
             <div key={label} className={`rounded-lg p-2 text-center ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
               <p className={`text-lg font-bold ${textPrimary}`}>{val}</p>
@@ -542,6 +562,27 @@ const ClientPortal: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modals and Toasts */}
+      <AddClientModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddClient}
+      />
+
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.3 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+            className={`fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg z-50 ${isDark ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}
+          >
+            <CheckCircle size={18} />
+            <span className="text-sm font-medium">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

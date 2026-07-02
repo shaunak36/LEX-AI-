@@ -1,5 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
+import { ROLE_LABELS } from '../../pages/Login';
 import { 
   LayoutDashboard, 
   FileSearch, 
@@ -22,7 +24,16 @@ import {
   PenTool,
   Timer,
   Users,
-  GitMerge
+  GitMerge,
+  Shield,
+  Map,
+  Lightbulb,
+  Gavel,
+  Search,
+  ShieldCheck,
+  Mic,
+  UserCheck,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -33,6 +44,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, toggleAIAssistant }) => {
   const { currentView, setCurrentView } = useApp();
+  const { currentUser, logout } = useAuth();
 
   const menuSections = [
     {
@@ -68,13 +80,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, toggl
       ],
     },
     {
+      label: 'LexResearch',
+      items: [
+        { id: 'ai-precedent-search', name: 'AI Precedent Search', icon: Search },
+        { id: 'due-diligence', name: 'Due Diligence Automation', icon: ShieldCheck },
+        { id: 'cross-examination', name: 'Cross-Exam Copilot', icon: Mic },
+        { id: 'expert-witness', name: 'Expert Witness Analyser', icon: UserCheck },
+      ],
+    },
+    {
+      label: 'LexCourt',
+      items: [
+        { id: 'case-journey', name: 'Case Journey Tracker', icon: Map },
+        { id: 'court-filing', name: 'Court Filing Checklist', icon: CheckSquare },
+        { id: 'argument-builder', name: 'Argument Builder', icon: Gavel },
+        { id: 'appeal-guidance', name: 'Appeal Guidance AI', icon: Lightbulb },
+      ],
+    },
+    {
       label: 'System',
       items: [
+        { id: 'user-management', name: 'User Management', icon: Shield },
         { id: 'ai-assistant', name: 'AI Legal Assistant', icon: Bot, action: toggleAIAssistant },
         { id: 'settings', name: 'Settings', icon: Settings },
       ],
     },
   ];
+
+  // Filter sections based on Role
+  const filteredMenuSections = menuSections.filter(section => {
+    // Hide LexCase and System for Lawyers/Clients
+    if (currentUser?.role === 'Lawyer' || currentUser?.role === 'Viewer' || currentUser?.role === 'client') {
+      if (section.label === 'LexCase' || section.label === 'System') {
+        return false;
+      }
+    }
+    return true;
+  });
 
   return (
     <div 
@@ -104,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, toggl
 
       {/* Nav Menu */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4 scrollbar-thin">
-        {menuSections.map((section) => (
+        {filteredMenuSections.map((section) => (
           <div key={section.label}>
             {/* Section label — hidden when collapsed */}
             {!collapsed && (
@@ -125,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, toggl
                   <button
                     key={item.id}
                     onClick={() => {
-                      if (item.action) {
+                      if ('action' in item && item.action) {
                         item.action();
                       } else {
                         setCurrentView(item.id);
@@ -164,16 +206,38 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, toggl
         ))}
       </nav>
 
-      {/* Version footer */}
-      {!collapsed && (
-        <div className="p-4 border-t border-slate-800 bg-slate-950/20 text-center">
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-500 font-medium">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Local Fine-Tuned Qwen
+      {/* User Profile & Footer */}
+      <div className="border-t border-slate-800 bg-slate-950/20 p-4 flex flex-col gap-3 mt-auto">
+        {!collapsed && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold flex-shrink-0">
+                {currentUser?.name?.charAt(0) || 'U'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-200 truncate">{currentUser?.name}</p>
+                <p className="text-[10px] text-slate-500 truncate">{currentUser?.role ? ROLE_LABELS[currentUser.role] || currentUser.role : 'Standard'}</p>
+              </div>
+            </div>
+            <button 
+              onClick={logout}
+              title="Sign Out"
+              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors flex-shrink-0"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
-          <p className="text-[10px] text-slate-600 mt-1">LexAI v1.1.0-alpha</p>
-        </div>
-      )}
+        )}
+        {collapsed && (
+          <button 
+            onClick={logout}
+            title="Sign Out"
+            className="w-full flex justify-center p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+          >
+            <LogOut size={20} />
+          </button>
+        )}
+      </div>
     </div>
   );
 };

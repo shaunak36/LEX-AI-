@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Handshake,
   AlertTriangle,
@@ -45,7 +48,7 @@ interface Clause {
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
-const MOCK_CLAUSES: Clause[] = [
+const INITIAL_CLAUSES: Clause[] = [
   {
     id: 'c1',
     title: 'Limitation of Liability',
@@ -318,32 +321,41 @@ function ClauseCard({ clause }: { clause: Clause }) {
 
 export const NegotiationAssistant: React.FC = () => {
   const [filter, setFilter] = useState<'all' | Negotiability>('all');
-<<<<<<< HEAD
+  const [clauses, setClauses] = useState<Clause[]>(INITIAL_CLAUSES);
+  const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
   
   const [isReanalysing, setIsReanalysing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-=======
-  const [reanalysing, setReanalysing] = useState(false);
->>>>>>> 047233bf435ef3fbf7fd0ee43e442331a568289a
 
   const filtered =
-    filter === 'all' ? MOCK_CLAUSES : MOCK_CLAUSES.filter((c) => c.negotiability === filter);
+    filter === 'all' ? clauses : clauses.filter((c) => c.negotiability === filter);
 
   const counts = {
-    negotiable: MOCK_CLAUSES.filter((c) => c.negotiability === 'negotiable').length,
-    'non-negotiable': MOCK_CLAUSES.filter((c) => c.negotiability === 'non-negotiable').length,
-    conditional: MOCK_CLAUSES.filter((c) => c.negotiability === 'conditional').length,
+    negotiable: clauses.filter((c) => c.negotiability === 'negotiable').length,
+    'non-negotiable': clauses.filter((c) => c.negotiability === 'non-negotiable').length,
+    conditional: clauses.filter((c) => c.negotiability === 'conditional').length,
   };
 
-<<<<<<< HEAD
   // Action Handlers
   const handleReanalyse = async () => {
     setIsReanalysing(true);
     try {
       console.log('Initiating re-analysis...');
-      // Simulate API call with a 1.5 second timeout
       await new Promise(resolve => setTimeout(resolve, 1500));
-      alert('Contract re-analysed successfully!');
+      
+      const updatedClauses = clauses.map(c => {
+        if (c.id === 'c2' && c.negotiability === 'conditional') {
+          return { ...c, negotiability: 'negotiable' as Negotiability, severity: 'low' as Severity };
+        }
+        if (c.id === 'c4' && c.severity === 'low') {
+          return { ...c, severity: 'medium' as Severity };
+        }
+        return c;
+      });
+      setClauses(updatedClauses);
+      
+      setToast({ show: true, message: 'AI Re-analysis complete!' });
+      setTimeout(() => setToast({ show: false, message: '' }), 3000);
     } catch (error) {
       console.error('Failed to re-analyse:', error);
     } finally {
@@ -354,68 +366,66 @@ export const NegotiationAssistant: React.FC = () => {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // 1. Prepare the data (converting MOCK_CLAUSES to a formatted JSON string)
-      const exportData = JSON.stringify(MOCK_CLAUSES, null, 2);
+      const doc = new jsPDF();
       
-      // 2. Create a Blob (a file-like object) from the data
-      const blob = new Blob([exportData], { type: 'application/json' });
+      // Title
+      doc.setFontSize(18);
+      doc.text('Negotiation Intelligence Report', 14, 22);
       
-      // 3. Create a temporary URL for the Blob
-      const url = URL.createObjectURL(blob);
-      
-      // 4. Create an invisible anchor tag to trigger the download
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'Negotiation_Report_CloudTech.json'; // Name of the downloaded file
-      
-      // 5. Append to the document, click it, and clean up
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text('Generated on: ' + new Date().toLocaleString(), 14, 30);
+      doc.text('Contract: SaaS Agreement CloudTech', 14, 36);
+
+      // Statistics
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text('Summary Statistics', 14, 48);
+
+      autoTable(doc, {
+        startY: 52,
+        head: [['Total Clauses', 'Negotiable', 'Non-Negotiable', 'Conditional']],
+        body: [[
+          clauses.length.toString(),
+          counts.negotiable.toString(),
+          counts['non-negotiable'].toString(),
+          counts.conditional.toString(),
+        ]],
+        theme: 'grid',
+        headStyles: { fillColor: [79, 70, 229] }
+      });
+
+      // Clause Breakdown
+      doc.text('Clause Breakdown', 14, (doc as any).lastAutoTable.finalY + 14);
+
+      const tableData = clauses.map(c => [
+        c.title,
+        c.negotiability.toUpperCase(),
+        c.severity.toUpperCase(),
+        c.reason
+      ]);
+
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 18,
+        head: [['Clause Title', 'Negotiability', 'Severity', 'AI Analysis']],
+        body: tableData,
+        styles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 40 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 'auto' }
+        },
+        headStyles: { fillColor: [79, 70, 229] }
+      });
+
+      doc.save('Negotiation_Report.pdf');
     } catch (error) {
       console.error('Failed to export:', error);
-      alert('An error occurred while generating the export file.');
+      alert('An error occurred while generating the PDF report.');
     } finally {
       setIsExporting(false);
     }
-=======
-  const handleReanalyse = async () => {
-    setReanalysing(true);
-    // Simulate re-analysis
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setReanalysing(false);
-    alert('Negotiation intelligence re-analysis complete! All counter-proposals refreshed.');
-  };
-
-  const handleExportReport = () => {
-    const reportText = `NEGOTIATION INTELLIGENCE REPORT
-Generated on: ${new Date().toLocaleString()}
---------------------------------------------
-${MOCK_CLAUSES.map(c => `
-Clause: ${c.title}
-Severity: ${c.severity.toUpperCase()}
-Negotiability: ${c.negotiability.toUpperCase()}
-
-Original text:
-"${c.original}"
-
-Recommendation / Reason:
-${c.reason}
-
-Suggested Counter-Proposal:
-${c.counterProposal || 'N/A'}
---------------------------------------------`).join('\n')}`;
-
-    const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Negotiation_Report_${new Date().toISOString().split('T')[0]}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
->>>>>>> 047233bf435ef3fbf7fd0ee43e442331a568289a
   };
 
   return (
@@ -438,7 +448,6 @@ ${c.counterProposal || 'N/A'}
             </p>
           </div>
           <div className="flex items-center gap-2 self-start md:self-center">
-<<<<<<< HEAD
             
             <button 
               onClick={handleReanalyse}
@@ -468,22 +477,6 @@ ${c.counterProposal || 'N/A'}
                 <FileText size={14} />
               )}
               {isExporting ? 'Exporting...' : 'Export Report'}
-=======
-            <button 
-              onClick={handleReanalyse}
-              disabled={reanalysing}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold text-xs tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <RotateCcw size={14} className={reanalysing ? 'animate-spin' : ''} />
-              {reanalysing ? 'Re-analysing...' : 'Re-analyse'}
-            </button>
-            <button 
-              onClick={handleExportReport}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs tracking-wider transition-colors shadow-lg shadow-indigo-500/10 cursor-pointer"
-            >
-              <FileText size={14} />
-              Export Report
->>>>>>> 047233bf435ef3fbf7fd0ee43e442331a568289a
             </button>
 
           </div>
@@ -493,7 +486,7 @@ ${c.counterProposal || 'N/A'}
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Clauses', value: MOCK_CLAUSES.length, icon: Scale, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/20', filterKey: 'all' as const },
+          { label: 'Total Clauses', value: clauses.length, icon: Scale, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/20', filterKey: 'all' as const },
           { label: 'Negotiable', value: counts.negotiable, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20', filterKey: 'negotiable' as const },
           { label: 'Non-Negotiable', value: counts['non-negotiable'], icon: Shield, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', filterKey: 'non-negotiable' as const },
           { label: 'Conditional', value: counts.conditional, icon: TrendingDown, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', filterKey: 'conditional' as const },
@@ -542,7 +535,7 @@ ${c.counterProposal || 'N/A'}
                     : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700'
                 }`}
               >
-                {f === 'all' ? `All (${MOCK_CLAUSES.length})` : f === 'non-negotiable' ? `Non-Neg. (${counts['non-negotiable']})` : `${f.charAt(0).toUpperCase() + f.slice(1)} (${counts[f]})`}
+                {f === 'all' ? `All (${clauses.length})` : f === 'non-negotiable' ? `Non-Neg. (${counts['non-negotiable']})` : `${f.charAt(0).toUpperCase() + f.slice(1)} (${counts[f as Negotiability]})`}
               </button>
             ))}
           </div>
@@ -555,6 +548,20 @@ ${c.counterProposal || 'N/A'}
         </div>
       </div>
 
+      {/* Toast */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.3 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+            className="fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg z-50 bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+          >
+            <CheckCircle size={18} />
+            <span className="text-sm font-medium">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -56,7 +56,15 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+interface User {
+  name: string;
+  email: string;
+  role: 'Super Admin' | 'Admin' | 'Standard' | 'Viewer';
+  avatar?: string;
+}
+
 interface AppContextType {
+  user: User | null;
   currentView: string;
   setCurrentView: (view: string) => void;
   theme: 'light' | 'dark';
@@ -373,6 +381,11 @@ This Agreement is entered into on June 20, 2026 by Apex Holdings Ltd. ("Employer
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>({
+    name: 'Admin User',
+    email: 'admin@lexai.com',
+    role: 'Super Admin'
+  });
   const [currentView, setCurrentView] = useState<string>('dashboard');
   const [theme, setThemeState] = useState<'light' | 'dark'>('dark');
   const [fontFamily, setFontFamilyState] = useState<string>(() => {
@@ -388,7 +401,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [ollamaStatus, setOllamaStatus] = useState<'disconnected' | 'connected' | 'checking'>('disconnected');
   const [availableModels, setAvailableModels] = useState<string[]>(['qwen2.5-coder:7b', 'llama3:8b', 'mistral:latest']);
   const [documents, setDocuments] = useState<LegalDocument[]>(INITIAL_DOCUMENTS);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>('doc-1');
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [comparisonContracts, setComparisonContracts] = useState<{
@@ -856,6 +869,7 @@ Can I provide specific information on Governing Law, Obligations, Definitions, o
   return (
     <AppContext.Provider
       value={{
+        user,
         currentView,
         setCurrentView,
         theme,

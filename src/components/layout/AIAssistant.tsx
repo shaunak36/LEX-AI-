@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
   Send, 
@@ -7,15 +8,17 @@ import {
   Sparkles, 
   AlertCircle, 
   X,
-  FileText
+  FileText,
+  MessageSquare
 } from 'lucide-react';
 
 interface AIAssistantProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpen: () => void;
 }
 
-export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => {
+export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, onOpen }) => {
   const { 
     chatMessages, 
     sendChatMessage, 
@@ -55,7 +58,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
     setSending(false);
   };
 
-  if (!isOpen) return null;
+
 
   const quickQuestions = activeDoc ? [
     `What is the governing law in ${activeDoc.name}?`,
@@ -68,7 +71,34 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
   ];
 
   return (
-    <div className="w-80 md:w-96 h-screen sticky top-0 flex flex-col bg-white dark:bg-zinc-950 border-l border-slate-200 dark:border-zinc-800 transition-colors duration-300 z-30 shadow-2xl">
+    <>
+      {/* Floating Action Button (Visible when closed) */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            onClick={onOpen}
+            className="fixed bottom-6 right-6 z-40 p-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 transition-colors flex items-center justify-center group"
+            title="Open Legal Assistant"
+          >
+            <MessageSquare size={24} className="group-hover:scale-110 transition-transform" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: "auto", opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="overflow-hidden h-screen sticky top-0 flex-shrink-0 z-30"
+          >
+            <div className="w-80 md:w-96 h-full flex flex-col bg-white dark:bg-zinc-950 border-l border-slate-200 dark:border-zinc-800 transition-colors duration-300 shadow-2xl">
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50">
         <div className="flex items-center gap-2">
@@ -238,5 +268,9 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
         </div>
       </form>
     </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };

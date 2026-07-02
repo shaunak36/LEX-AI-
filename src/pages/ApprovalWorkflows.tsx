@@ -20,35 +20,14 @@ import {
   Circle,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-
-// ── Types ──────────────────────────────────────────────────────────────────
-type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected' | 'In Review' | 'Escalated';
-type Priority = 'Urgent' | 'High' | 'Normal' | 'Low';
-
-interface Approver {
-  name: string;
-  role: string;
-  status: 'Waiting' | 'Approved' | 'Rejected' | 'Current';
-  time?: string;
-  comment?: string;
-}
-
-interface ApprovalItem {
-  id: string;
-  title: string;
-  documentType: string;
-  clientName: string;
-  submittedBy: string;
-  submittedDate: string;
-  dueDate: string;
-  status: ApprovalStatus;
-  priority: Priority;
-  stage: number;
-  totalStages: number;
-  approvers: Approver[];
-  summary: string;
-  riskLevel: 'High' | 'Medium' | 'Low';
-}
+import { motion, AnimatePresence } from 'framer-motion';
+import CreateApprovalModal from '../components/CreateApprovalModal';
+import type {
+  ApprovalStatus,
+  Priority,
+  Approver,
+  ApprovalItem,
+} from '../components/CreateApprovalModal';
 
 // ── Static Data ────────────────────────────────────────────────────────────
 const APPROVALS: ApprovalItem[] = [
@@ -247,21 +226,25 @@ const ApprovalWorkflows: React.FC = () => {
   const { theme } = useApp();
   const isDark = theme === 'dark';
 
+  const [approvals, setApprovals] = useState<ApprovalItem[]>(APPROVALS);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+
   const [selected, setSelected] = useState<ApprovalItem | null>(APPROVALS[0]);
   const [filterStatus, setFilterStatus] = useState<'All' | ApprovalStatus>('All');
   const [commentText, setCommentText] = useState('');
   const [actionDone, setActionDone] = useState<Record<string, boolean>>({});
 
-  const filtered = APPROVALS.filter(
+  const filtered = approvals.filter(
     (a) => filterStatus === 'All' || a.status === filterStatus
   );
 
   const stats = {
-    total: APPROVALS.length,
-    pending: APPROVALS.filter((a) => a.status === 'Pending').length,
-    inReview: APPROVALS.filter((a) => a.status === 'In Review').length,
-    approved: APPROVALS.filter((a) => a.status === 'Approved').length,
-    escalated: APPROVALS.filter((a) => a.status === 'Escalated').length,
+    total: approvals.length,
+    pending: approvals.filter((a) => a.status === 'Pending').length,
+    inReview: approvals.filter((a) => a.status === 'In Review').length,
+    approved: approvals.filter((a) => a.status === 'Approved').length,
+    escalated: approvals.filter((a) => a.status === 'Escalated').length,
   };
 
   const bg = isDark ? 'bg-[#0f1117]' : 'bg-gray-50';
@@ -277,6 +260,16 @@ const ApprovalWorkflows: React.FC = () => {
     setActionDone((prev) => ({ ...prev, [id]: true }));
   };
 
+  const handleCreateApproval = (newItem: ApprovalItem) => {
+    setApprovals([newItem, ...approvals]);
+    setSelected(newItem);
+    setIsCreateModalOpen(false);
+    setFilterStatus('All');
+    
+    setToast({ show: true, message: 'Approval request created successfully!' });
+    setTimeout(() => setToast({ show: false, message: '' }), 3000);
+  };
+
   return (
     <div className={`flex h-full ${bg} overflow-hidden`}>
       {/* ── Left Panel: Queue ──────────────────────────────────────── */}
@@ -285,7 +278,10 @@ const ApprovalWorkflows: React.FC = () => {
         <div className={`px-4 pt-5 pb-3 border-b ${border}`}>
           <div className="flex items-center justify-between mb-3">
             <h2 className={`text-lg font-semibold ${textPrimary}`}>Approval Queue</h2>
-            <button className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors">
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+            >
               <Plus size={12} />
               New
             </button>
@@ -543,6 +539,27 @@ const ApprovalWorkflows: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modals and Toasts */}
+      <CreateApprovalModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={handleCreateApproval}
+      />
+
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.3 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+            className={`fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg z-50 ${isDark ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}
+          >
+            <CheckCircle size={18} />
+            <span className="text-sm font-medium">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
